@@ -214,7 +214,7 @@ class StateSpace:
         '''
         # set of all operations
         ops = list(range(len(self.operators)))
-        inputs = list(range(self.input_lookback_depth, 0))
+        inputs = list(range(self.input_lookback_depth, 1))
 
         # if input_lookback_depth == 0, then we need to adjust to have at least
         # one input (generally 0)
@@ -505,7 +505,6 @@ class Encoder:
                     child = child.tolist()
                     state_list = self.state_space.one_hot_encode_child(child)
                     state_list = np.concatenate(state_list, axis=-1).astype('int32')
-
                     # feed in the child model and the score
                     feed_dict = {
                         self.state_input: state_list,

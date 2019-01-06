@@ -9,27 +9,33 @@ from keras.utils import to_categorical
 from encoder import Encoder, StateSpace
 from manager import NetworkManager
 from model import model_fn
+import random
 
 # create a shared session between Keras and Tensorflow
 policy_sess = tf.Session()
 K.set_session(policy_sess)
 
 B = 5  # number of blocks in each cell
-K_ = 64  # number of children networks to train
+K_ = 25  # number of children networks to train
 
-MAX_EPOCHS = 5  # maximum number of epochs to train
+MAX_EPOCHS = 1  # maximum number of epochs to train
 BATCHSIZE = 128  # batchsize
 REGULARIZATION = 0  # regularization strength
 CONTROLLER_CELLS = 100  # number of cells in RNN controller
 RNN_TRAINING_EPOCHS = 10
 RESTORE_CONTROLLER = True  # restore controller to continue training
+NORMAL_CELL_NUMBER= 3
+FIRST_LAYER_FILTERs= 48 
+
 
 operators = ['3x3 dconv', '5x5 dconv', '7x7 dconv',
-             '1x7-7x1 conv', '3x3 maxpool', '3x3 avgpool']  # use the default set of operators, minus identity and conv 3x3
+             '1x7-7x1 conv', '3x3 maxpool', '3x3 avgpool','identity','3x3 conv']  # use the default set of operators, minus identity and conv 3x3
+
 
 # construct a state space
-state_space = StateSpace(B, input_lookback_depth=0, input_lookforward_depth=0,
+state_space = StateSpace(B, input_lookback_depth=-1, input_lookforward_depth=4,
                          operators=operators)
+
 
 # print the state space being searched
 state_space.print_state_space()
@@ -83,7 +89,7 @@ for trial in range(B):
         print("\nFinished %d out of %d models ! \n" % (t + 1, len(actions)))
 
         # write the results of this trial into a file
-        with open('train_history.csv', mode='a+', newline='') as f:
+        with open('test.csv', mode='a+', newline='') as f:
             data = [reward]
             data.extend(state_space.parse_state_space_list(action))
             writer = csv.writer(f)

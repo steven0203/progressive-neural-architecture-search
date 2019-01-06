@@ -5,13 +5,53 @@ from keras.layers import BatchNormalization
 from keras import backend as K
 
 # generic model design
-def model_fn(actions):
+def model_fn(actions,N=2,filters=24):
     B = len(actions) // 4
-    action_list = np.split(np.array(actions), len(actions) // 2)
-
+    
     ip = Input(shape=(32, 32, 3))
-    x = build_cell(ip, 24, action_list, B, stride=(2, 2))
-    x = build_cell(x,48, action_list, B, stride=(2, 2))
+    ip1= ip
+    ip2= ip
+    stride1=(1,1)
+    stride2=(1,1)
+
+    #normal cell
+    for i in range(N):
+        x=build_cell(ip1,ip2, filters, actions, B,stride1,stride2)
+        ip1=ip2
+        ip2=x
+    
+    #recudtion cell
+    stride1=(2,2)
+    stride2=(2,2)
+    filters=filters*2
+    x=build_cell(ip1,ip2, filters, actions, B,stride1,stride2)
+    ip1=ip2
+    ip2=x
+    stride2=(1,1)
+
+    #normal cell
+    for i in range(N):
+        x=build_cell(ip1,ip2, filters, actions, B,stride1,stride2)
+        ip1=ip2
+        ip2=x
+        stride1=(1,1)
+        
+    #recudtion cell
+    stride1=(2,2)
+    stride2=(2,2)
+    filters=filters*2
+    x=build_cell(ip1,ip2, filters, actions, B,stride1,stride2)
+    ip1=ip2
+    ip2=x
+    stride2=(1,1)
+    
+    #normal cell
+    for i in range(N):
+        x=build_cell(ip1,ip2, filters, actions, B,stride1,stride2)
+        ip1=ip2
+        ip2=x
+        stride1=(1,1)
+
     x = GlobalAveragePooling2D()(x)
     x = Dense(10, activation='softmax')(x)
 
@@ -90,26 +130,53 @@ def parse_action(ip, filters, action, strides=(1, 1)):
         # else just submits a linear layer if shapes match
         return Activation('linear')(ip)
 
-
-def build_cell(ip, filters, action_list, B, stride):
+"""
+def build_cell(ip, filters, actions, B, stride):
     # if cell size is 1 block only
     if B == 1:
-        left = parse_action(ip, filters, action_list[0][1], strides=stride)
-        right = parse_action(ip, filters, action_list[1][1], strides=stride)
+        left = parse_action(ip, filters, actions[1], strides=stride)
+        right = parse_action(ip, filters, actions[3], strides=stride)
         return concatenate([left, right], axis=-1)
 
     # else concatenate all the intermediate blocks
     actions = []
     for i in range(B):
-        left_action = parse_action(ip, filters, action_list[i * 2][1], strides=stride)
-        right_action = parse_action(ip, filters, action_list[i * 2 + 1][1], strides=stride)
+        left_action = parse_action(ip, filters, actions[i * 4+1], strides=stride)
+        right_action = parse_action(ip, filters, actions[i * 4+3], strides=stride)
         action = concatenate([left_action, right_action], axis=-1)
         actions.append(action)
 
     # concatenate the final blocks as well
     op = concatenate(actions, axis=-1)
     return op
+"""
+def build_cell(ip1,ip2, filters, actions, B, stride1=(1,1),stride2=(1,1)):
+    # if cell size is 1 block only
+    inputs=[ip1,ip2]
+    stride=[stride1,stride2]
+    input_filters=filters
+    for i in range(B):
+        stride.append((1,1))
+    if B == 1:
+        index=actions[0]+1
+        left = parse_action(inputs[index], input_filters, actions[1], strides=stride[index])
+        index=actions[2]+1
+        right = parse_action(inputs[index], input_filters, actions[3], strides=stride[index])
+        return concatenate([left, right], axis=-1)
 
+    # else concatenate all the intermediate blocks
+    actions = []
+    for i in range(B):
+        index=actions[i*4]+1
+        left_action = parse_action(inputs[index], input_filters, actions[i * 4+1], strides=stride[index])
+        index=actions[i*4+2]+1
+        right_action = parse_action(inputs[index], input_filters, actions[i * 4+3], strides=stride[index])
+        action = concatenate([left_action, right_action], axis=-1)
+        actions.append(action)
+        inputs.append(action)
 
+    # concatenate the final blocks as well
+    op = concatenate(actions, axis=-1)
+    return op
 
 

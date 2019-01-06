@@ -83,6 +83,8 @@ class NetworkManager:
 
             print()
             print("Manager: Accuracy = ", reward)
+            model.summary()
+
 
         # clean up resources and GPU memory
         network_sess.close()
