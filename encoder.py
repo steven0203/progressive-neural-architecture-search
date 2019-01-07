@@ -224,9 +224,22 @@ class StateSpace:
         print()
         print("Obtaining search space for b = 1")
         print("Search space size : ", (len(inputs) * (len(self.operators) ** 2)))
-
+        
+        """
         search_space = [inputs, ops, inputs, ops]
         self.children = list(self._construct_permutations(search_space))
+        """
+
+        self.children=[]
+
+        tmp=[]
+        for i in range(len(inputs)):
+            for j in range(len(self.operators)):
+                tmp.append([inputs[i],self.operators[j]])
+        for i in range(len(tmp)):
+            for j in range(i,len(tmp)):
+                self.children.append((tmp[i][0],tmp[i][1],tmp[j][0],tmp[j][1]))
+
 
     def prepare_intermediate_children(self, new_b):
         '''

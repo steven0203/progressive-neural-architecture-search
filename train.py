@@ -24,8 +24,8 @@ REGULARIZATION = 0  # regularization strength
 CONTROLLER_CELLS = 100  # number of cells in RNN controller
 RNN_TRAINING_EPOCHS = 10
 RESTORE_CONTROLLER = True  # restore controller to continue training
-NORMAL_CELL_NUMBER= 3
-FIRST_LAYER_FILTERs= 48 
+NORMAL_CELL_NUMBER= 2
+FIRST_LAYER_FILTERs= 24
 
 
 operators = ['3x3 dconv', '5x5 dconv', '7x7 dconv',
@@ -59,7 +59,7 @@ with policy_sess.as_default():
                          restore_controller=RESTORE_CONTROLLER)
 
 # create the Network Manager
-manager = NetworkManager(dataset, epochs=MAX_EPOCHS, batchsize=BATCHSIZE)
+manager = NetworkManager(dataset, epochs=MAX_EPOCHS, batchsize=BATCHSIZE,cell_number=NORMAL_CELL_NUMBER,filters=FIRST_LAYER_FILTERs)
 print()
 
 # train for number of trails

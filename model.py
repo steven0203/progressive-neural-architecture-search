@@ -154,23 +154,22 @@ def build_cell(ip1,ip2, filters, actions, B, stride1=(1,1),stride2=(1,1)):
     # if cell size is 1 block only
     inputs=[ip1,ip2]
     stride=[stride1,stride2]
-    input_filters=filters
     for i in range(B):
         stride.append((1,1))
     if B == 1:
         index=actions[0]+1
-        left = parse_action(inputs[index], input_filters, actions[1], strides=stride[index])
+        left = parse_action(inputs[index], filters, actions[1], strides=stride[index])
         index=actions[2]+1
-        right = parse_action(inputs[index], input_filters, actions[3], strides=stride[index])
+        right = parse_action(inputs[index], filters, actions[3], strides=stride[index])
         return concatenate([left, right], axis=-1)
 
     # else concatenate all the intermediate blocks
     actions = []
     for i in range(B):
         index=actions[i*4]+1
-        left_action = parse_action(inputs[index], input_filters, actions[i * 4+1], strides=stride[index])
+        left_action = parse_action(inputs[index], filters, actions[i * 4+1], strides=stride[index])
         index=actions[i*4+2]+1
-        right_action = parse_action(inputs[index], input_filters, actions[i * 4+3], strides=stride[index])
+        right_action = parse_action(inputs[index], filters, actions[i * 4+3], strides=stride[index])
         action = concatenate([left_action, right_action], axis=-1)
         actions.append(action)
         inputs.append(action)

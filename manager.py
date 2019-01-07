@@ -10,7 +10,7 @@ class NetworkManager:
     '''
     Helper class to manage the generation of subnetwork training given a dataset
     '''
-    def __init__(self, dataset, epochs=5, batchsize=128):
+    def __init__(self, dataset, epochs=5, batchsize=128,cell_number=2,filters=24):
         '''
         Manager which is tasked with creating subnetworks, training them on a dataset, and retrieving
         rewards in the term of accuracy, which is passed to the controller RNN.
@@ -26,6 +26,8 @@ class NetworkManager:
         self.dataset = dataset
         self.epochs = epochs
         self.batchsize = batchsize
+        self.cell_number=cell_number
+        self.filters=filters
 
     def get_rewards(self, model_fn, actions):
         '''
@@ -57,7 +59,7 @@ class NetworkManager:
             K.set_session(network_sess)
 
             # generate a submodel given predicted actions
-            model = model_fn(actions)  # type: Model
+            model = model_fn(actions,N=self.cell_number,filters=self.filters)  # type: Model
             optimizer = Adam(lr=1e-3, amsgrad=True)
             model.compile(optimizer, 'categorical_crossentropy', metrics=['accuracy'])
 
