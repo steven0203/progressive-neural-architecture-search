@@ -21,7 +21,7 @@ K.set_session(policy_sess)
 B = 5  # number of blocks in each cell
 K_ = 25  # number of children networks to train
 
-MAX_EPOCHS = 1  # maximum number of epochs to train
+MAX_EPOCHS = 3  # maximum number of epochs to train
 BATCHSIZE = 128  # batchsize
 REGULARIZATION = 0  # regularization strength
 CONTROLLER_CELLS = 100  # number of cells in RNN controller

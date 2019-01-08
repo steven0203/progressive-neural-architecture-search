@@ -78,7 +78,7 @@ class NetworkManager:
 
 
             # evaluate the model
-            loss, acc = model.evaluate(X_val, y_val, batch_size=self.batchsize)
+            loss, acc = model.evaluate(X_val, y_val, batch_size=self.batchsize,verbose=0)
 
             # compute the reward
             reward = acc
