@@ -74,7 +74,7 @@ class NetworkManager:
 
             # train the model using Keras methods
             model.fit(X_train, y_train, batch_size=self.batchsize, epochs=self.epochs,
-                      verbose=1, validation_data=(X_val, y_val))
+                      verbose=2, validation_data=(X_val, y_val))
 
 
             # evaluate the model

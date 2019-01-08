@@ -10,6 +10,9 @@ from encoder import Encoder, StateSpace
 from manager import NetworkManager
 from model import model_fn
 import random
+import time
+from utils import Logger
+import sys
 
 # create a shared session between Keras and Tensorflow
 policy_sess = tf.Session()
@@ -26,6 +29,8 @@ RNN_TRAINING_EPOCHS = 10
 RESTORE_CONTROLLER = True  # restore controller to continue training
 NORMAL_CELL_NUMBER= 3
 FIRST_LAYER_FILTERs= 48
+LOG_FILE='log.txt'
+sys.stdout=Logger(LOG_FILE)
 
 
 operators = ['3x3 dconv', '5x5 dconv', '7x7 dconv',
@@ -35,6 +40,8 @@ operators = ['3x3 dconv', '5x5 dconv', '7x7 dconv',
 # construct a state space
 state_space = StateSpace(B, input_lookback_depth=-1, input_lookforward_depth=4,
                          operators=operators)
+
+
 
 
 # print the state space being searched
@@ -49,6 +56,11 @@ y_train = to_categorical(y_train)
 y_test = to_categorical(y_test)
 
 dataset = [x_train, y_train, x_test, y_test]  # pack the dataset for the NetworkManager
+
+
+#start recording time
+start_time=time.time()
+
 
 with policy_sess.as_default():
     # create the Encoder and build the internal policy network
@@ -110,4 +122,7 @@ for trial in range(B):
         controller.update_step()
         print()
 
+#record endding time 
+end_time=time.time()
+print('Total Time : ',end_time-start_time ,' sec')
 print("Finished !")
