@@ -72,6 +72,7 @@ class StateSpace:
 
         self.children = None
         self.intermediate_children = None
+        self.model_ids= None
 
         self.B = B
 
@@ -283,9 +284,12 @@ class StateSpace:
 
         for i, child in enumerate(self.children):
             for permutation in new_search_space:
+                data=[]
                 temp_child = list(child)
                 temp_child.extend(permutation)
-                yield temp_child
+                data.append(temp_child)
+                data.append(self.model_ids[i])
+                yield data
 
     def _construct_permutations(self, search_space):
         ''' state space is a 4-tuple (ip1, op1, ip2, op2) '''
@@ -366,7 +370,6 @@ class Encoder:
 
         self.children_history = None
         self.score_history = None
-
         self.build_policy_network()
 
     def get_actions(self, top_k=None):
@@ -390,7 +393,8 @@ class Encoder:
             encoded_model = self.state_space.one_hot_encode_child(model)
             actions.append(encoded_model)
 
-        return actions
+
+        return actions,self.state_space.model_ids
 
     def build_policy_network(self):
         with self.policy_session.as_default():
@@ -477,7 +481,7 @@ class Encoder:
                     print("Loading Encoder Checkpoint !")
                     self.saver.restore(self.policy_session, path)
 
-    def train_step(self, rewards):
+    def train_step(self, rewards,model_ids=None):
         '''
         Perform a single train step on the Encoder RNN
 
@@ -486,6 +490,7 @@ class Encoder:
         '''
         children = np.array(self.state_space.children, dtype=np.object)  # take all the children
         rewards = np.array(rewards, dtype=np.float32)
+        self.state_space.model_ids=model_ids
         loss = 0
 
         if self.children_history is None:
@@ -552,7 +557,9 @@ class Encoder:
                 models_scores = []
 
                 # iterate through all the intermediate children
-                for i, intermediate_child in enumerate(self.state_space.prepare_intermediate_children(self.b_)):
+                for i,  data in enumerate(self.state_space.prepare_intermediate_children(self.b_)):
+                    intermediate_child=data[0]
+                    model_id=data[1]
                     state_list = self.state_space.one_hot_encode_child(intermediate_child)
                     state_list = np.concatenate(state_list, axis=-1).astype('int32')
 
@@ -565,12 +572,13 @@ class Encoder:
                     score = score[0, 0]
 
                     # preserve the child and its score
-                    models_scores.append([intermediate_child, score])
+                    models_scores.append([intermediate_child, score,data[1]])
 
                     with open('scores_%d.csv' % (self.b_), mode='a+', newline='') as f:
                         writer = csv.writer(f)
                         data = [score]
                         data.extend(intermediate_child)
+                        data.extend([model_id])
                         writer.writerow(data)
 
                     if (i + 1) % 500 == 0:
@@ -584,11 +592,14 @@ class Encoder:
 
                 # take only the K highest scoring children for next iteration
                 children = []
+                model_ids=[]
                 for i in range(children_count):
                     children.append(models_scores[i][0])
-
+                    model_id.append(models_scores[i][2])
                 # save these children for next round
                 self.state_space.update_children(children)
+                self.state_space.model_ids=model_ids
+
         else:
             print()
             print("No more updates necessary as max B has been reached !")

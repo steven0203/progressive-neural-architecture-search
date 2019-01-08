@@ -28,8 +28,10 @@ class NetworkManager:
         self.batchsize = batchsize
         self.cell_number=cell_number
         self.filters=filters
+        self.model_number=0
+        
 
-    def get_rewards(self, model_fn, actions):
+    def get_rewards(self, model_fn, actions,model_id=None):
         '''
         Creates a subnetwork given the actions predicted by the controller RNN,
         trains it on the provided dataset, and then returns a reward.
@@ -65,17 +67,15 @@ class NetworkManager:
 
             # unpack the dataset
             X_train, y_train, X_val, y_val = self.dataset
+            
+            if model_id!=None:
+                model.load_weights('weights/model_'+str(model_id)+'.h5',by_name=True)
+
 
             # train the model using Keras methods
             model.fit(X_train, y_train, batch_size=self.batchsize, epochs=self.epochs,
-                      verbose=1, validation_data=(X_val, y_val),
-                      callbacks=[ModelCheckpoint('weights/temp_network.h5',
-                                                 monitor='val_acc', verbose=1,
-                                                 save_best_only=True,
-                                                 save_weights_only=True)])
+                      verbose=1, validation_data=(X_val, y_val))
 
-            # load best performance epoch in this training session
-            model.load_weights('weights/temp_network.h5')
 
             # evaluate the model
             loss, acc = model.evaluate(X_val, y_val, batch_size=self.batchsize)
@@ -87,8 +87,10 @@ class NetworkManager:
             print("Manager: Accuracy = ", reward)
             model.summary()
 
+            model.save_weights('weights/model_'+str(self.model_number)+'.h5')
+            self.model_number+=1
 
         # clean up resources and GPU memory
         network_sess.close()
 
-        return reward
+        return reward,self.model_number-1
