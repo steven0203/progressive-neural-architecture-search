@@ -14,7 +14,7 @@ def get_no_share_name():  # dirty workaround... :(
 # generic model design
 def model_fn(actions,N=2,filters=24):
     B = len(actions) // 4
-    
+
     cell_index=1
     ip = Input(shape=(32, 32, 3))
     ip1= ip
@@ -93,12 +93,13 @@ def parse_action(ip, filters, action,input_name, strides=(1, 1)):
     '''
     assert isinstance(action, str)
     name = input_name + '_' + action.replace(' ', '_')
-
+    
     # applies a 3x3 separable conv
     if action == '3x3 dconv':
         x = SeparableConv2D(filters, (3, 3), strides=strides, padding='same',name=name)(ip)
         x = BatchNormalization(name=name + '_bn')(x)
         x = Activation('relu')(x)
+        
         return x
 
     # applies a 5x5 separable conv
@@ -106,6 +107,7 @@ def parse_action(ip, filters, action,input_name, strides=(1, 1)):
         x = SeparableConv2D(filters, (5, 5), strides=strides, padding='same',name=name)(ip)
         x = BatchNormalization(name=name + '_bn')(x)
         x = Activation('relu')(x)
+
         return x
 
     # applies a 7x7 separable conv
@@ -113,15 +115,18 @@ def parse_action(ip, filters, action,input_name, strides=(1, 1)):
         x = SeparableConv2D(filters, (7, 7), strides=strides, padding='same',name=name)(ip)
         x = BatchNormalization(name=name + '_bn')(x)
         x = Activation('relu')(x)
+
         return x
 
     # applies a 1x7 and then a 7x1 standard conv operation
     if action == '1x7-7x1 conv':
         x = Conv2D(filters, (1, 7), strides=strides, padding='same',name=input_name + '_1x7_conv')(ip)
         x = BatchNormalization(name=input_name + '_1x7_conv_bn')(x)
+
         x = Activation('relu')(x)
         x = Conv2D(filters, (7, 1), strides=(1, 1), padding='same',name=input_name + '_7x1_conv')(x)
         x = BatchNormalization(name=input_name + '_7x1_conv_bn')(x)
+
         x = Activation('relu')(x)
         return x
 
@@ -130,6 +135,7 @@ def parse_action(ip, filters, action,input_name, strides=(1, 1)):
         x = Conv2D(filters, (3, 3), strides=strides, padding='same',name=name)(ip)
         x = BatchNormalization(name=name + '_bn')(x)
         x = Activation('relu')(x)
+
         return x
 
     # applies a 3x3 maxpool
@@ -147,6 +153,7 @@ def parse_action(ip, filters, action,input_name, strides=(1, 1)):
         x = Conv2D(input_filters, (1, 1), strides=strides, padding='same',name=input_name + '_1x1_conv')(ip)
         x = BatchNormalization(name=input_name + '_1x1_conv_bn')(x)
         x = Activation('relu')(x)
+
         return x
     else:
         # else just submits a linear layer if shapes match
@@ -170,9 +177,9 @@ def build_cell(ip1,ip2, filters, action_list, B,name, stride1=(1,1),stride2=(1,1
     # if cell size is 1 block only
     if B == 1:
         index=action_list[0]+1
-        left = parse_action(inputs[index], filters, action_list[1], strides=stride[index],input_name=name+'_block_1_left')
+        left = parse_action(inputs[index], filters, action_list[1], strides=stride[index],input_name=name+'_block_1_left_'+str(index))
         index=action_list[2]+1
-        right = parse_action(inputs[index], filters, action_list[3], strides=stride[index],input_name=name+'_block_1_right')
+        right = parse_action(inputs[index], filters, action_list[3], strides=stride[index],input_name=name+'_block_1_right_'+str(index))
         return concatenate([left, right], axis=-1)
 
     # else concatenate all the intermediate blocks
@@ -180,10 +187,10 @@ def build_cell(ip1,ip2, filters, action_list, B,name, stride1=(1,1),stride2=(1,1
     for i in range(B):
         index=action_list[i*4]+1
         left_action = parse_action(inputs[index], filters, action_list[i * 4+1], strides=stride[index],
-                                   input_name='{}_block_{}_left'.format(name, i + 1))
+                                   input_name='{}_block_{}_left_{}'.format(name, i + 1,index))
         index=action_list[i*4+2]+1
         right_action = parse_action(inputs[index], filters, action_list[i * 4+3], strides=stride[index],
-                                    input_name='{}_block_{}_right'.format(name, i + 1))
+                                    input_name='{}_block_{}_right_{}'.format(name, i + 1,index))
         action = concatenate([left_action, right_action], axis=-1)
         actions.append(action)
         inputs.append(action)
@@ -193,4 +200,14 @@ def build_cell(ip1,ip2, filters, action_list, B,name, stride1=(1,1),stride2=(1,1
 
     return op
 
+def save_weights(model,shared_weights):
+    for layer in model.layers:
+        if shared_weights.has_key(layer.name)==False:
+            shared_weights[layer.name]=layer.get_weights()
+        shared_weights.setdefault(layer.name, layer.get_weights())
 
+def load_weights(model,shared_weights):
+    for layer in model.layers:
+        if shared_weights.has_key(layer.name):
+            layer.set_weights(shared_weights[layer.name])       
+        

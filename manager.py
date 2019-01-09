@@ -10,7 +10,7 @@ class NetworkManager:
     '''
     Helper class to manage the generation of subnetwork training given a dataset
     '''
-    def __init__(self, dataset, epochs=5, batchsize=128,cell_number=2,filters=24):
+    def __init__(self, dataset, epochs=5, batchsize=128,cell_number=2,filters=24,blocks=5):
         '''
         Manager which is tasked with creating subnetworks, training them on a dataset, and retrieving
         rewards in the term of accuracy, which is passed to the controller RNN.
@@ -28,10 +28,14 @@ class NetworkManager:
         self.batchsize = batchsize
         self.cell_number=cell_number
         self.filters=filters
-        self.model_number=0
-        
+        self.shared_weights={}
 
-    def get_rewards(self, model_fn, actions,model_id=None):
+
+
+
+
+
+    def get_rewards(self, model_fn, actions):
         '''
         Creates a subnetwork given the actions predicted by the controller RNN,
         trains it on the provided dataset, and then returns a reward.
@@ -65,19 +69,20 @@ class NetworkManager:
             model.summary()
             optimizer = Adam(lr=1e-3, amsgrad=True)
             model.compile(optimizer, 'categorical_crossentropy', metrics=['accuracy'])
+            self.load_weights(model)            
 
             # unpack the dataset
             X_train, y_train, X_val, y_val = self.dataset
-            
-            if model_id!=None:
-                model.load_weights('weights/model_'+str(model_id)+'.h5',by_name=True)
-
 
             # train the model using Keras methods
             model.fit(X_train, y_train, batch_size=self.batchsize, epochs=self.epochs,
-                      verbose=2, validation_data=(X_val, y_val))
-
-
+                      verbose=2, validation_data=(X_val, y_val),
+                      callbacks=[ModelCheckpoint('weights/temp_network.h5',
+                                                 monitor='val_acc', verbose=1,
+                                                 save_best_only=True,
+                                                 save_weights_only=True)])
+                        
+            model.load_weights('weights/temp_network.h5')        
             # evaluate the model
             loss, acc = model.evaluate(X_val, y_val, batch_size=self.batchsize,verbose=0)
 
@@ -86,11 +91,23 @@ class NetworkManager:
 
             print()
             print("Manager: Accuracy = ", reward)
-
-            model.save_weights('weights/model_'+str(self.model_number)+'.h5')
-            self.model_number+=1
+            
+            self.save_weights(model)
 
         # clean up resources and GPU memory
         network_sess.close()
 
-        return reward,self.model_number-1
+        return reward
+    
+
+    def save_weights(self,model):
+        for layer in model.layers:
+            if layer.name not in self.shared_weights:
+                self.shared_weights[layer.name]=layer.get_weights()
+            self.shared_weights.setdefault(layer.name, layer.get_weights())
+
+    def load_weights(self,model):
+        for layer in model.layers:
+            if layer.name in self.shared_weights:
+                layer.set_weights(self.shared_weights[layer.name])       
+        

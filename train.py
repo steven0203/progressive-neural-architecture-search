@@ -21,7 +21,7 @@ K.set_session(policy_sess)
 B = 5  # number of blocks in each cell
 K_ = 25  # number of children networks to train
 
-MAX_EPOCHS = 3  # maximum number of epochs to train
+MAX_EPOCHS = 1  # maximum number of epochs to train
 BATCHSIZE = 128  # batchsize
 REGULARIZATION = 0  # regularization strength
 CONTROLLER_CELLS = 100  # number of hidden units in RNN controller
@@ -71,7 +71,7 @@ with policy_sess.as_default():
                          restore_controller=RESTORE_CONTROLLER)
 
 # create the Network Manager
-manager = NetworkManager(dataset, epochs=MAX_EPOCHS, batchsize=BATCHSIZE,cell_number=NORMAL_CELL_NUMBER,filters=FIRST_LAYER_FILTERS)
+manager = NetworkManager(dataset, epochs=MAX_EPOCHS, batchsize=BATCHSIZE,cell_number=NORMAL_CELL_NUMBER,filters=FIRST_LAYER_FILTERS,blocks=B)
 print()
 
 # train for number of trails
@@ -84,31 +84,25 @@ for trial in range(B):
         else:
             k = K_
 
-        actions ,input_ids= controller.get_actions(top_k=k)  # get all actions for the previous state
+        actions = controller.get_actions(top_k=k)  # get all actions for the previous state
 
     rewards = []
-    model_ids=[]
     for t, action in enumerate(actions):
         # print the action probabilities
         state_space.print_actions(action)
         print("Model #%d / #%d" % (t + 1, len(actions)))
         print("Predicted actions : ", state_space.parse_state_space_list(action))
 
-        # build a model, train and get reward and accuracy from the network manager
-        if input_ids==None:
-            input_id=None
-        else :
-            input_id=input_ids[t]
-        reward,model_id= manager.get_rewards(model_fn, state_space.parse_state_space_list(action),input_id)
+
+        reward= manager.get_rewards(model_fn, state_space.parse_state_space_list(action))
         print("Final Accuracy : ", reward)
 
         rewards.append(reward)
-        model_ids.append(model_id)
         print("\nFinished %d out of %d models ! \n" % (t + 1, len(actions)))
 
         # write the results of this trial into a file
         with open('test.csv', mode='a+', newline='') as f:
-            data = [reward,model_id]
+            data = [reward]
             data.extend(state_space.parse_state_space_list(action))
             writer = csv.writer(f)
             writer.writerow(data)
@@ -116,7 +110,7 @@ for trial in range(B):
     with policy_sess.as_default():
         K.set_session(policy_sess)
         # train the controller on the saved state and the discounted rewards
-        loss = controller.train_step(rewards,model_ids)
+        loss = controller.train_step(rewards)
         print("Trial %d: Encoder loss : %0.6f" % (trial + 1, loss))
 
         controller.update_step()
