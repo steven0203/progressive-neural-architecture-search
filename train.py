@@ -24,11 +24,11 @@ K_ = 25  # number of children networks to train
 MAX_EPOCHS = 3  # maximum number of epochs to train
 BATCHSIZE = 128  # batchsize
 REGULARIZATION = 0  # regularization strength
-CONTROLLER_CELLS = 100  # number of cells in RNN controller
+CONTROLLER_CELLS = 100  # number of hidden units in RNN controller
 RNN_TRAINING_EPOCHS = 10
 RESTORE_CONTROLLER = True  # restore controller to continue training
-NORMAL_CELL_NUMBER= 3
-FIRST_LAYER_FILTERs= 48
+NORMAL_CELL_NUMBER = 3
+FIRST_LAYER_FILTERS = 48
 LOG_FILE='log.txt'
 sys.stdout=Logger(LOG_FILE)
 
@@ -71,7 +71,7 @@ with policy_sess.as_default():
                          restore_controller=RESTORE_CONTROLLER)
 
 # create the Network Manager
-manager = NetworkManager(dataset, epochs=MAX_EPOCHS, batchsize=BATCHSIZE,cell_number=NORMAL_CELL_NUMBER,filters=FIRST_LAYER_FILTERs)
+manager = NetworkManager(dataset, epochs=MAX_EPOCHS, batchsize=BATCHSIZE,cell_number=NORMAL_CELL_NUMBER,filters=FIRST_LAYER_FILTERS)
 print()
 
 # train for number of trails

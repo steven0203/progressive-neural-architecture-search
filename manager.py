@@ -62,6 +62,7 @@ class NetworkManager:
 
             # generate a submodel given predicted actions
             model = model_fn(actions,N=self.cell_number,filters=self.filters)  # type: Model
+            model.summary()
             optimizer = Adam(lr=1e-3, amsgrad=True)
             model.compile(optimizer, 'categorical_crossentropy', metrics=['accuracy'])
 
@@ -85,7 +86,6 @@ class NetworkManager:
 
             print()
             print("Manager: Accuracy = ", reward)
-            model.summary()
 
             model.save_weights('weights/model_'+str(self.model_number)+'.h5')
             self.model_number+=1

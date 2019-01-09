@@ -595,7 +595,7 @@ class Encoder:
                 model_ids=[]
                 for i in range(children_count):
                     children.append(models_scores[i][0])
-                    model_id.append(models_scores[i][2])
+                    model_ids.append(models_scores[i][2])
                 # save these children for next round
                 self.state_space.update_children(children)
                 self.state_space.model_ids=model_ids
