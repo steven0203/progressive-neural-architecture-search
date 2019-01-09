@@ -199,15 +199,3 @@ def build_cell(ip1,ip2, filters, action_list, B,name, stride1=(1,1),stride2=(1,1
     op = concatenate(actions, axis=-1)
 
     return op
-
-def save_weights(model,shared_weights):
-    for layer in model.layers:
-        if shared_weights.has_key(layer.name)==False:
-            shared_weights[layer.name]=layer.get_weights()
-        shared_weights.setdefault(layer.name, layer.get_weights())
-
-def load_weights(model,shared_weights):
-    for layer in model.layers:
-        if shared_weights.has_key(layer.name):
-            layer.set_weights(shared_weights[layer.name])       
-        

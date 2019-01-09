@@ -97,7 +97,7 @@ class NetworkManager:
         # clean up resources and GPU memory
         network_sess.close()
 
-        return reward
+        return reward,model
     
 
     def save_weights(self,model):

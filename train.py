@@ -21,7 +21,7 @@ K.set_session(policy_sess)
 B = 5  # number of blocks in each cell
 K_ = 25  # number of children networks to train
 
-MAX_EPOCHS = 1  # maximum number of epochs to train
+MAX_EPOCHS = 3  # maximum number of epochs to train
 BATCHSIZE = 128  # batchsize
 REGULARIZATION = 0  # regularization strength
 CONTROLLER_CELLS = 100  # number of hidden units in RNN controller
@@ -94,7 +94,7 @@ for trial in range(B):
         print("Predicted actions : ", state_space.parse_state_space_list(action))
 
 
-        reward= manager.get_rewards(model_fn, state_space.parse_state_space_list(action))
+        reward,model= manager.get_rewards(model_fn, state_space.parse_state_space_list(action))
         print("Final Accuracy : ", reward)
 
         rewards.append(reward)
@@ -106,6 +106,16 @@ for trial in range(B):
             data.extend(state_space.parse_state_space_list(action))
             writer = csv.writer(f)
             writer.writerow(data)
+
+        #save result_model
+        if trial==B-1:
+            with open('result.csv', mode='w', newline='') as f:
+                data = [reward]
+                data.extend(state_space.parse_state_space_list(action))
+                data.append('model_'+str(t)+'.h5')
+                writer = csv.writer(f)
+                writer.writerow(data)
+                model.save('model_'+str(t)+'.h5')
 
     with policy_sess.as_default():
         K.set_session(policy_sess)
