@@ -10,7 +10,7 @@ class NetworkManager:
     '''
     Helper class to manage the generation of subnetwork training given a dataset
     '''
-    def __init__(self, dataset, epochs=5, batchsize=128,cell_number=2,filters=24,blocks=5):
+    def __init__(self, dataset, epochs=5, batchsize=128, cell_number=2, filters=24):
         '''
         Manager which is tasked with creating subnetworks, training them on a dataset, and retrieving
         rewards in the term of accuracy, which is passed to the controller RNN.
@@ -102,9 +102,12 @@ class NetworkManager:
 
     def save_weights(self,model):
         for layer in model.layers:
-            if layer.name not in self.shared_weights:
-                self.shared_weights[layer.name]=layer.get_weights()
-            self.shared_weights.setdefault(layer.name, layer.get_weights())
+            if layer.name.startswith('no_share'):
+                continue
+            weights = layer.get_weights()
+            if weights:
+                self.shared_weights[layer.name] = weights
+
 
     def load_weights(self,model):
         for layer in model.layers:

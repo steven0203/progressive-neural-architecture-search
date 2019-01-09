@@ -71,7 +71,7 @@ with policy_sess.as_default():
                          restore_controller=RESTORE_CONTROLLER)
 
 # create the Network Manager
-manager = NetworkManager(dataset, epochs=MAX_EPOCHS, batchsize=BATCHSIZE,cell_number=NORMAL_CELL_NUMBER,filters=FIRST_LAYER_FILTERS,blocks=B)
+manager = NetworkManager(dataset, epochs=MAX_EPOCHS, batchsize=BATCHSIZE,cell_number=NORMAL_CELL_NUMBER,filters=FIRST_LAYER_FILTERS)
 print()
 
 # train for number of trails
