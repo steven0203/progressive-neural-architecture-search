@@ -565,7 +565,7 @@ class Encoder:
                     score = score[0, 0]
 
                     # preserve the child and its score
-                    models_scores.append([intermediate_child, score,data[1]])
+                    models_scores.append([intermediate_child, score])
 
                     with open('scores_%d.csv' % (self.b_), mode='a+', newline='') as f:
                         writer = csv.writer(f)
