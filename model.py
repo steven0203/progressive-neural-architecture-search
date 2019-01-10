@@ -1,15 +1,9 @@
 import numpy as np
 from keras.models import Model
-from keras.layers import Input, Dense, Conv2D, GlobalAveragePooling2D, Activation, SeparableConv2D, MaxPool2D, AveragePooling2D, concatenate
-from keras.layers import BatchNormalization
+from keras.layers import Input, Dense, Conv2D, GlobalAveragePooling2D, Activation, SeparableConv2D, MaxPool2D, AveragePooling2D
+from keras.layers import BatchNormalization, concatenate, add
 from keras import backend as K
 
-unique_id = 0
-
-def get_no_share_name():  # dirty workaround... :(
-    global unique_id
-    unique_id += 1
-    return 'no_share_{}'.format(unique_id)
 
 # generic model design
 def model_fn(actions,N=2,filters=24):
@@ -64,12 +58,6 @@ def model_fn(actions,N=2,filters=24):
         ip2=x
         stride1=(1,1)
         cell_index+=1
-
-    # calibrate tensor shape (number of channels)
-    if x.shape[-1] != filters:
-        x = Conv2D(filters, (1, 1), padding='same', name=get_no_share_name())(x)
-        x = BatchNormalization(name=get_no_share_name())(x)
-        x = Activation('relu')(x)
 
     x = GlobalAveragePooling2D()(x)
     x = Dense(10, activation='softmax')(x)
@@ -169,20 +157,12 @@ def build_cell(ip1,ip2, filters, action_list, B,name, stride1=(1,1),stride2=(1,1
     # calibrate input tensor shape (number of channels)
     for i, ip in enumerate(inputs):
         if ip.shape[-1] != filters:
-            x = Conv2D(filters, (1, 1), padding='same', name=get_no_share_name())(ip)
-            x = BatchNormalization(name=get_no_share_name())(x)
+            x = Conv2D(filters, (1, 1), padding='same', name='{}_cali_in_conv_{}'.format(name, i))(ip)
+            x = BatchNormalization(name='{}_cali_in_bn_{}'.format(name, i))(x)
             x = Activation('relu')(x)
             inputs[i] = x
 
-    # if cell size is 1 block only
-    if B == 1:
-        index=action_list[0]+1
-        left = parse_action(inputs[index], filters, action_list[1], strides=stride[index],input_name=name+'_block_1_left_'+str(index))
-        index=action_list[2]+1
-        right = parse_action(inputs[index], filters, action_list[3], strides=stride[index],input_name=name+'_block_1_right_'+str(index))
-        return concatenate([left, right], axis=-1)
-
-    # else concatenate all the intermediate blocks
+    # build blocks
     actions = []
     for i in range(B):
         index=action_list[i*4]+1
@@ -195,7 +175,14 @@ def build_cell(ip1,ip2, filters, action_list, B,name, stride1=(1,1),stride2=(1,1
         actions.append(action)
         inputs.append(action)
 
-    # concatenate the final blocks as well
-    op = concatenate(actions, axis=-1)
-
-    return op
+    # calibrate output tensor shape
+    for i, x in enumerate(actions):
+        x = Conv2D(filters, (1, 1), padding='same', name='{}_cali_out_conv_{}'.format(name, i + 1))(x)
+        actions[i] = x
+    if len(actions) > 1:
+        x = add(actions)
+    else:
+        x = actions[0]
+    x = BatchNormalization(name='{}_cali_out_bn'.format(name))(x)
+    x = Activation('relu')(x)
+    return x
