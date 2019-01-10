@@ -13,6 +13,8 @@ import random
 import time
 from utils import Logger
 import sys
+import os
+from datetime import datetime
 
 # create a shared session between Keras and Tensorflow
 policy_sess = tf.Session()
@@ -61,6 +63,9 @@ dataset = [x_train, y_train, x_test, y_test]  # pack the dataset for the Network
 #start recording time
 start_time=time.time()
 
+# create the directory for model saving
+model_dir = 'models_{:%Y-%m-%dT%H:%M}'.format(datetime.now())
+os.makedirs(model_dir)
 
 with policy_sess.as_default():
     # create the Encoder and build the internal policy network
@@ -93,15 +98,16 @@ for trial in range(B):
         print("Model #%d / #%d" % (t + 1, len(actions)))
         print("Predicted actions : ", state_space.parse_state_space_list(action))
 
+        save_path = '{}/model_{}.h5'.format(model_dir, t) if trial == B - 1 else None
 
-        reward,model= manager.get_rewards(model_fn, state_space.parse_state_space_list(action))
+        reward = manager.get_rewards(model_fn, state_space.parse_state_space_list(action), save_path=save_path)
         print("Final Accuracy : ", reward)
 
         rewards.append(reward)
         print("\nFinished %d out of %d models ! \n" % (t + 1, len(actions)))
 
         # write the results of this trial into a file
-        with open('test.csv', mode='a+', newline='') as f:
+        with open(os.path.join(model_dir, 'test.csv'), mode='a+', newline='') as f:
             data = [reward]
             data.extend(state_space.parse_state_space_list(action))
             writer = csv.writer(f)
@@ -109,13 +115,12 @@ for trial in range(B):
 
         #save result_model
         if trial==B-1:
-            with open('result.csv', mode='w', newline='') as f:
+            with open(os.path.join(model_dir, 'result.csv'), mode='a+', newline='') as f:
                 data = [reward]
                 data.extend(state_space.parse_state_space_list(action))
                 data.append('model_'+str(t)+'.h5')
                 writer = csv.writer(f)
                 writer.writerow(data)
-                model.save('model_'+str(t)+'.h5')
 
     with policy_sess.as_default():
         K.set_session(policy_sess)

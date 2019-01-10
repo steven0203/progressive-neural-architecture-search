@@ -35,7 +35,7 @@ class NetworkManager:
 
 
 
-    def get_rewards(self, model_fn, actions):
+    def get_rewards(self, model_fn, actions, save_path=None):
         '''
         Creates a subnetwork given the actions predicted by the controller RNN,
         trains it on the provided dataset, and then returns a reward.
@@ -93,11 +93,13 @@ class NetworkManager:
             print("Manager: Accuracy = ", reward)
             
             self.save_weights(model)
+            if save_path:
+                model.save(save_path)
 
         # clean up resources and GPU memory
         network_sess.close()
 
-        return reward,model
+        return reward
     
 
     def save_weights(self,model):
