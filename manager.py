@@ -108,6 +108,8 @@ class NetworkManager:
                 continue
             weights = layer.get_weights()
             if weights:
+                if not(os.path.exists('shared_weights')):
+                    os.mkdir('shared_weights')
                 np.save('shared_weights/'+layer.name,weights)
 
     def load_weights(self,model):
