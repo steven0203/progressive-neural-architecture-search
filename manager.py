@@ -1,4 +1,5 @@
 import numpy as np
+import os
 
 from keras.models import Model
 from keras import backend as K
@@ -28,7 +29,6 @@ class NetworkManager:
         self.batchsize = batchsize
         self.cell_number=cell_number
         self.filters=filters
-        self.shared_weights={}
 
 
 
@@ -108,11 +108,12 @@ class NetworkManager:
                 continue
             weights = layer.get_weights()
             if weights:
-                self.shared_weights[layer.name] = weights
-
+                np.save('shared_weights/'+layer.name,weights)
 
     def load_weights(self,model):
         for layer in model.layers:
-            if layer.name in self.shared_weights:
-                layer.set_weights(self.shared_weights[layer.name])       
+            filepath='shared_weights/'+layer.name+'npy'
+            if os.path.isfile(filepath):
+                weights=np.load(filepath)
+                layer.set_weights(weights)     
         

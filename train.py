@@ -15,6 +15,7 @@ from utils import Logger
 import sys
 import os
 from datetime import datetime
+import shutil
 
 # create a shared session between Keras and Tensorflow
 policy_sess = tf.Session()
@@ -32,6 +33,9 @@ RESTORE_CONTROLLER = True  # restore controller to continue training
 NORMAL_CELL_NUMBER = 3
 FIRST_LAYER_FILTERS = 48
 LOG_FILE='log.txt'
+CLEAR_SHARE_WEIGHTS= True
+
+
 sys.stdout=Logger(LOG_FILE)
 
 
@@ -78,6 +82,11 @@ with policy_sess.as_default():
 # create the Network Manager
 manager = NetworkManager(dataset, epochs=MAX_EPOCHS, batchsize=BATCHSIZE,cell_number=NORMAL_CELL_NUMBER,filters=FIRST_LAYER_FILTERS)
 print()
+
+#reset all shared weights
+if os.path.isdir('shared_weights') and CLEAR_SHARE_WEIGHTS:
+    shutil.rmtree('shared_weights')
+
 
 # train for number of trails
 for trial in range(B):
