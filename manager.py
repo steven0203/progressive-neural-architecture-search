@@ -97,7 +97,7 @@ class NetworkManager:
                 model.save(save_path)
 
         # clean up resources and GPU memory
-        network_sess.close()
+        K.clear_session()
 
         return reward
     
