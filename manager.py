@@ -114,7 +114,7 @@ class NetworkManager:
 
     def load_weights(self,model):
         for layer in model.layers:
-            filepath='shared_weights/'+layer.name+'npy'
+            filepath='shared_weights/'+layer.name+'.npy'
             if os.path.isfile(filepath):
                 weights=np.load(filepath)
                 layer.set_weights(weights)     
