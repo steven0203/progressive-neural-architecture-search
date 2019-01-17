@@ -172,13 +172,12 @@ def build_cell(ip1,ip2, filters, action_list, B,name, stride1=(1,1),stride2=(1,1
         right_action = parse_action(inputs[index], filters, action_list[i * 4+3], strides=stride[index],
                                     input_name='{}_block_{}_right_{}'.format(name, i + 1,index))
         action = concatenate([left_action, right_action], axis=-1)
+ 
+        action = Conv2D(filters, (1, 1), padding='same', name='{}_cali_out_conv_{}'.format(name, i + 1))(action)
+
         actions.append(action)
         inputs.append(action)
 
-    # calibrate output tensor shape
-    for i, x in enumerate(actions):
-        x = Conv2D(filters, (1, 1), padding='same', name='{}_cali_out_conv_{}'.format(name, i + 1))(x)
-        actions[i] = x
     if len(actions) > 1:
         x = add(actions)
     else:
