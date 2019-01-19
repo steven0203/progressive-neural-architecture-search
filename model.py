@@ -171,17 +171,21 @@ def build_cell(ip1,ip2, filters, action_list, B,name, stride1=(1,1),stride2=(1,1
         index=action_list[i*4+2]+1
         right_action = parse_action(inputs[index], filters, action_list[i * 4+3], strides=stride[index],
                                     input_name='{}_block_{}_right_{}'.format(name, i + 1,index))
-        action = concatenate([left_action, right_action], axis=-1)
- 
-        action = Conv2D(filters, (1, 1), padding='same', name='{}_cali_out_conv_{}'.format(name, i + 1))(action)
-
+        action = add([left_action, right_action])
         actions.append(action)
         inputs.append(action)
 
+    # concatenate block outputs
+    # (concat then conv 1x1) === (conv 1x1 respectively then add)
+    # Note: Weight sharing cannot be applied if directly concat then conv 1x1
+    #       due to mismatched shape of weights.
+    for i, x in enumerate(actions):
+        x = Conv2D(filters, (1, 1), padding='same', name='{}_concat_conv_{}'.format(name, i + 1))(x)
+        actions[i] = x
     if len(actions) > 1:
         x = add(actions)
     else:
         x = actions[0]
-    x = BatchNormalization(name='{}_cali_out_bn'.format(name))(x)
+    x = BatchNormalization(name='{}_concat_bn'.format(name))(x)
     x = Activation('relu')(x)
     return x
